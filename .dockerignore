@@ -44,4 +44,5 @@ coverage.html
 coverage.out
 coverage_failures.txt
 coverage_clean.out
+**.bak**
 
