@@ -63,7 +63,6 @@ func runTransform(_ *cobra.Command, _ []string) {
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	ctx = util.WithContext(ctx, logger)
 
 	// Connect to database
 	database, err := db.Connect()
