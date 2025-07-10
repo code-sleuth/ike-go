@@ -1,0 +1,119 @@
+version: "2"
+run:
+  go: "1.24"
+linters:
+  default: none
+  enable:
+    - asasalint
+    - bidichk
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - cyclop
+    - dupl
+    - durationcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - exhaustive
+    - forcetypeassert
+    - gocheckcompilerdirectives
+#    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - lll
+    - loggercheck
+    - makezero
+    - mirror
+    - mnd
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - testableexamples
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - _mock\.go$
+      - _test\.go$
+      - \.pb\.go$
+      - \.gen\.go$
+      - vendor
+      - scripts
+      - tools
+      - third_party$
+      - builtin$
+      - examples$
+  settings:
+    cyclop:
+      max-complexity: 20
+    nestif:
+      min-complexity: 15
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: true
+severity:
+  default: error
+  rules:
+    - linters:
+        - gocritic
+      severity: warning
+    - linters:
+        - revive
+      severity: warning
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - _mock\.go$
+      - _test\.go$
+      - \.pb\.go$
+      - \.gen\.go$
+      - vendor
+      - scripts
+      - tools
+      - third_party$
+      - builtin$
+      - examples$
