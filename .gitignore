@@ -1,0 +1,47 @@
+.idea
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+**bin
+
+# VIM
+*.swp
+
+# Serverless directories
+.serverless
+
+# golang vendor (dependencies) directory
+vendor
+
+# environment variables
+node_modules
+.env
+.env_local
+.envprod
+**.env
+
+# Sensitive files
+*.dump
+*.token
+*.domain
+*.secret
+bin
+cleanup.go
+temp.sql
+
+# mac file system
+.DS_Store
+.claude
+*.log
+*.csv
+notes
+
+# test coverage files
+coverage.html
+coverage.out
+coverage_failures.txt
+coverage_clean.out
+
