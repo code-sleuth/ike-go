@@ -274,7 +274,9 @@ ike-go/
 │   │   └── init_schema.sql   # Database schema
 │   └── util/
 │       └── logger.go         # Logging utilities
-
+└── py/                        # Legacy Python scripts
+    ├── wp-json-importer.py
+    └── wp-json-transform-sync.py
 ```
 
 ### Adding New Commands
@@ -351,7 +353,7 @@ make test  # Run all tests
 
 ## License
 
-[MIT](LICENSE)
+[Add your license information here]
 
 ## Contributing
 
