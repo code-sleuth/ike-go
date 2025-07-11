@@ -2,6 +2,9 @@ package chunkers
 
 import (
 	"errors"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/code-sleuth/ike-go/internal/manager/models"
 	"github.com/code-sleuth/ike-go/pkg/util"
@@ -25,11 +28,15 @@ type TokenChunker struct {
 
 // NewTokenChunker creates a new token-based chunker.
 func NewTokenChunker() (*TokenChunker, error) {
-	logger := util.NewLogger(zerolog.ErrorLevel)
-	// Using cl100k_base encoding because it's used by GPT-3.5-turbo and GPT-4
-	encoding, err := tokenizer.Get(tokenizer.Cl100kBase)
+	// Get log level from environment or default to error
+	logLevel := getLogLevelFromEnv()
+	logger := util.NewLogger(logLevel)
+	
+	// Get tokenizer from environment or default to cl100k_base
+	tokenizerName := getTokenizerFromEnv()
+	encoding, err := getTokenizerEncoding(tokenizerName)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to get tokenizer")
+		logger.Error().Err(err).Str("tokenizer", tokenizerName).Msg("failed to get tokenizer")
 		return nil, err
 	}
 
@@ -71,7 +78,7 @@ func (t *TokenChunker) ChunkDocument(content string, maxTokens int) ([]*models.C
 			ID:         uuid.New().String(),
 			Body:       &content,
 			ByteSize:   intPtr(len([]byte(content))),
-			Tokenizer:  stringPtr("cl100k_base"),
+			Tokenizer:  stringPtr(getTokenizerFromEnv()),
 			TokenCount: &totalTokens,
 		}
 		return []*models.Chunk{chunk}, nil
@@ -156,7 +163,7 @@ func (t *TokenChunker) ChunkDocumentWithOverlap(
 			ID:         uuid.New().String(),
 			Body:       &content,
 			ByteSize:   intPtr(len([]byte(content))),
-			Tokenizer:  stringPtr("cl100k_base"),
+			Tokenizer:  stringPtr(getTokenizerFromEnv()),
 			TokenCount: &totalTokens,
 		}
 		return []*models.Chunk{chunk}, nil
@@ -228,4 +235,67 @@ func intPtr(i int) *int {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+// getTokenizerFromEnv returns the tokenizer name from environment or default
+func getTokenizerFromEnv() string {
+	tokenizerName := os.Getenv("CHUNKER_TOKENIZER")
+	if tokenizerName == "" {
+		return "cl100k_base"
+	}
+	return tokenizerName
+}
+
+// getTokenizerEncoding returns the tokenizer encoding for the given name
+func getTokenizerEncoding(name string) (tokenizer.Codec, error) {
+	switch strings.ToLower(name) {
+	case "cl100k_base":
+		return tokenizer.Get(tokenizer.Cl100kBase)
+	case "p50k_base":
+		return tokenizer.Get(tokenizer.P50kBase)
+	case "r50k_base":
+		return tokenizer.Get(tokenizer.R50kBase)
+	default:
+		// Default to cl100k_base for unknown tokenizers
+		return tokenizer.Get(tokenizer.Cl100kBase)
+	}
+}
+
+// getLogLevelFromEnv returns the log level from environment or default
+func getLogLevelFromEnv() zerolog.Level {
+	logLevel := os.Getenv("CHUNKER_LOG_LEVEL")
+	switch strings.ToLower(logLevel) {
+	case "debug":
+		return zerolog.DebugLevel
+	case "info":
+		return zerolog.InfoLevel
+	case "warn", "warning":
+		return zerolog.WarnLevel
+	case "error":
+		return zerolog.ErrorLevel
+	default:
+		return zerolog.ErrorLevel
+	}
+}
+
+// getIntFromEnv returns an integer from environment variable or default value
+func getIntFromEnv(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	if intValue, err := strconv.Atoi(value); err == nil {
+		return intValue
+	}
+	return defaultValue
+}
+
+// GetDefaultMaxTokens returns the default max tokens from environment or default
+func GetDefaultMaxTokens() int {
+	return getIntFromEnv("CHUNKER_DEFAULT_MAX_TOKENS", 100)
+}
+
+// GetDefaultOverlapTokens returns the default overlap tokens from environment or default
+func GetDefaultOverlapTokens() int {
+	return getIntFromEnv("CHUNKER_DEFAULT_OVERLAP_TOKENS", 20)
 }
