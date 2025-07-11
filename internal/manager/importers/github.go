@@ -31,6 +31,8 @@ const (
 	httpOKStatus = 200
 	// Default file format for sources.
 	formatJSON = "json"
+	// Default source type
+	sourceTypeGitHub = "github"
 )
 
 var (
@@ -46,6 +48,7 @@ var (
 type GitHubImporter struct {
 	client        *http.Client
 	token         string
+	apiBaseURL    string
 	exclusions    []string
 	maxFileSize   int64
 	supportedExts []string
@@ -91,12 +94,28 @@ type GitHubFileResponse struct {
 
 // NewGitHubImporter creates a new GitHub repository importer.
 func NewGitHubImporter() *GitHubImporter {
-	logger := util.NewLogger(zerolog.InfoLevel)
-	return &GitHubImporter{
-		client: &http.Client{
+	return NewGitHubImporterWithClient(nil, "")
+}
+
+// NewGitHubImporterWithClient creates a new GitHub repository importer with custom HTTP client and API base URL.
+func NewGitHubImporterWithClient(client *http.Client, apiBaseURL string) *GitHubImporter {
+	logger := util.NewLogger(zerolog.ErrorLevel)
+	githubToken := os.Getenv("GITHUB_TOKEN")
+
+	if client == nil {
+		client = &http.Client{
 			Timeout: defaultHTTPTimeout * time.Second,
-		},
-		token:       os.Getenv("GITHUB_TOKEN"),
+		}
+	}
+
+	if apiBaseURL == "" {
+		apiBaseURL = "https://api.github.com"
+	}
+
+	return &GitHubImporter{
+		client:      client,
+		token:       githubToken,
+		apiBaseURL:  apiBaseURL,
 		maxFileSize: defaultMaxFileSize,
 		supportedExts: []string{
 			".md",
@@ -138,8 +157,6 @@ func NewGitHubImporter() *GitHubImporter {
 		logger: logger,
 	}
 }
-
-const sourceTypeGitHub = "github"
 
 // GetSourceType returns the source type this importer handles.
 func (g *GitHubImporter) GetSourceType() string {
@@ -265,8 +282,8 @@ func (g *GitHubImporter) parseGitHubURL(sourceURL string) (*GitHubRepoInfo, erro
 
 // getRepoTree fetches the repository tree from GitHub API.
 func (g *GitHubImporter) getRepoTree(ctx context.Context, repoInfo *GitHubRepoInfo) (*GitHubTreeResponse, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/git/trees/%s?recursive=1",
-		repoInfo.Owner, repoInfo.Repo, repoInfo.Ref)
+	url := fmt.Sprintf("%s/repos/%s/%s/git/trees/%s?recursive=1",
+		g.apiBaseURL, repoInfo.Owner, repoInfo.Repo, repoInfo.Ref)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -394,8 +411,8 @@ func (g *GitHubImporter) importFile(
 
 // getFileContent fetches the content of a file from GitHub.
 func (g *GitHubImporter) getFileContent(ctx context.Context, repoInfo *GitHubRepoInfo, path string) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s",
-		repoInfo.Owner, repoInfo.Repo, path, repoInfo.Ref)
+	url := fmt.Sprintf("%s/repos/%s/%s/contents/%s?ref=%s",
+		g.apiBaseURL, repoInfo.Owner, repoInfo.Repo, path, repoInfo.Ref)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
