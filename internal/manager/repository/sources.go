@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/code-sleuth/ike-go/internal/manager/models"
 	"github.com/code-sleuth/ike-go/pkg/db"
@@ -50,9 +51,10 @@ func (r *SourceRepository) GetByID(id string) (*models.Source, error) {
 	row := r.db.QueryRow(query, id)
 
 	var source models.Source
+	var createdAtStr, updatedAtStr string
 	err := row.Scan(&source.ID, &source.AuthorEmail, &source.RawURL, &source.Scheme,
 		&source.Host, &source.Path, &source.Query, &source.ActiveDomain, &source.Format,
-		&source.CreatedAt, &source.UpdatedAt)
+		&createdAtStr, &updatedAtStr)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		r.logger.Error().Str("source_id", id).Msg("Source not found")
@@ -60,6 +62,19 @@ func (r *SourceRepository) GetByID(id string) (*models.Source, error) {
 	}
 	if err != nil {
 		r.logger.Error().Err(err).Msg("Failed to get source")
+		return nil, err
+	}
+
+	// Parse timestamp strings - try multiple formats
+	source.CreatedAt, err = parseTimestamp(createdAtStr)
+	if err != nil {
+		r.logger.Error().Err(err).Str("created_at", createdAtStr).Msg("Failed to parse created_at")
+		return nil, err
+	}
+
+	source.UpdatedAt, err = parseTimestamp(updatedAtStr)
+	if err != nil {
+		r.logger.Error().Err(err).Str("updated_at", updatedAtStr).Msg("Failed to parse updated_at")
 		return nil, err
 	}
 
@@ -84,13 +99,28 @@ func (r *SourceRepository) List() ([]models.Source, error) {
 	var sources []models.Source
 	for rows.Next() {
 		var source models.Source
+		var createdAtStr, updatedAtStr string
 		err := rows.Scan(&source.ID, &source.AuthorEmail, &source.RawURL, &source.Scheme,
 			&source.Host, &source.Path, &source.Query, &source.ActiveDomain, &source.Format,
-			&source.CreatedAt, &source.UpdatedAt)
+			&createdAtStr, &updatedAtStr)
 		if err != nil {
 			r.logger.Error().Err(err).Msg("Failed to scan source")
 			return nil, err
 		}
+
+		// Parse timestamp strings - try multiple formats
+		source.CreatedAt, err = parseTimestamp(createdAtStr)
+		if err != nil {
+			r.logger.Error().Err(err).Str("created_at", createdAtStr).Msg("Failed to parse created_at")
+			return nil, err
+		}
+
+		source.UpdatedAt, err = parseTimestamp(updatedAtStr)
+		if err != nil {
+			r.logger.Error().Err(err).Str("updated_at", updatedAtStr).Msg("Failed to parse updated_at")
+			return nil, err
+		}
+
 		sources = append(sources, source)
 	}
 
@@ -119,4 +149,20 @@ func (r *SourceRepository) Delete(id string) error {
 		r.logger.Error().Err(err).Msg("Failed to delete source")
 	}
 	return err
+}
+
+// parseTimestamp handles multiple timestamp formats used by SQLite
+func parseTimestamp(timestampStr string) (time.Time, error) {
+	// Try ISO 8601 format first (default creation format)
+	if t, err := time.Parse("2006-01-02T15:04:05Z", timestampStr); err == nil {
+		return t, nil
+	}
+	
+	// Try SQLite datetime() format (used by updates)
+	if t, err := time.Parse("2006-01-02 15:04:05", timestampStr); err == nil {
+		return t, nil
+	}
+	
+	// If both fail, return error
+	return time.Time{}, errors.New("unsupported timestamp format: " + timestampStr)
 }
