@@ -36,7 +36,9 @@ The system uses a plugin-based architecture where components implement interface
    - GitHub file transformer (with syntax highlighting)
 
 3. **Chunkers**: Split documents into embeddable chunks
-   - Token-based chunking using tiktoken
+   - Token-based chunking using tiktoken with configurable tokenizer support
+   - Environment-configurable chunk sizes and overlap settings
+   - Support for multiple tokenizer encodings (cl100k_base, p50k_base, r50k_base)
 
 4. **Embedders**: Generate vector embeddings
    - OpenAI embeddings (text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002)
@@ -115,6 +117,12 @@ export GITHUB_TOKEN="your-github-token"
 
 # Deployment stage eg (local, dev, prod)
 export STAGE="your-deployment-stage"
+
+# Chunker Configuration (optional)
+export CHUNKER_TOKENIZER="cl100k_base"          # Tokenizer: cl100k_base, p50k_base, r50k_base
+export CHUNKER_DEFAULT_MAX_TOKENS="100"         # Default max tokens per chunk
+export CHUNKER_DEFAULT_OVERLAP_TOKENS="20"      # Default overlap tokens for overlapping chunks
+export CHUNKER_LOG_LEVEL="error"                # Log level: debug, info, warn, error
 ```
 
 ## Usage
@@ -199,6 +207,24 @@ export STAGE="your-deployment-stage"
 - Code: `.py`, `.js`, `.go`, `.java`, `.cpp`, `.c`, `.h`, `.hpp`
 - Web: `.css`, `.html`, `.xml`
 - Data: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`, `.cfg`, `.conf`
+
+## Chunking Configuration
+
+The token-based chunker supports environment-based configuration:
+
+### Tokenizer Options
+- **cl100k_base** (default): Used by GPT-3.5-turbo and GPT-4 models
+- **p50k_base**: Used by older GPT-3 models
+- **r50k_base**: Used by Codex models
+
+### Configuration Variables
+- `CHUNKER_TOKENIZER`: Tokenizer encoding to use (default: cl100k_base)
+- `CHUNKER_DEFAULT_MAX_TOKENS`: Default maximum tokens per chunk (default: 100)
+- `CHUNKER_DEFAULT_OVERLAP_TOKENS`: Default overlap tokens for overlapping chunks (default: 20)
+- `CHUNKER_LOG_LEVEL`: Chunker logging level - debug, info, warn, error (default: error)
+
+### Usage in Tests
+Tests automatically load configuration from `.env` file and use environment values for chunk sizing, making tests configurable without code changes.
 
 ## Available Commands
 
@@ -388,6 +414,7 @@ make test  # Run all tests
    - Embedder tests require API keys: set `OPENAI_API_KEY` and/or `TOGETHER_API_KEY`
    - Integration tests may be rate-limited: consider running fewer concurrent tests
    - Database tests require valid Turso credentials in `.env` file
+   - Chunker tests use environment configuration: customize `CHUNKER_*` variables for different test scenarios
 
 ## Support
 
