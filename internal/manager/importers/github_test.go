@@ -22,49 +22,6 @@ func TestNewGitHubImporter(t *testing.T) {
 	if importer.GetSourceType() != "github" {
 		t.Errorf("Expected source type 'github', got %s", importer.GetSourceType())
 	}
-
-	// Check default values
-	if importer.maxFileSize != defaultMaxFileSize {
-		t.Errorf("Expected maxFileSize %d, got %d", defaultMaxFileSize, importer.maxFileSize)
-	}
-
-	if len(importer.supportedExts) == 0 {
-		t.Error("Expected non-empty supportedExts")
-	}
-
-	if len(importer.exclusions) == 0 {
-		t.Error("Expected non-empty exclusions")
-	}
-
-	// Check that some expected extensions are present
-	expectedExts := []string{".md", ".go", ".py", ".js"}
-	for _, ext := range expectedExts {
-		found := false
-		for _, supportedExt := range importer.supportedExts {
-			if supportedExt == ext {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected extension %s to be supported", ext)
-		}
-	}
-
-	// Check that some expected exclusions are present
-	expectedExclusions := []string{".git", "node_modules", "__pycache__"}
-	for _, exclusion := range expectedExclusions {
-		found := false
-		for _, excl := range importer.exclusions {
-			if excl == exclusion {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected exclusion %s to be present", exclusion)
-		}
-	}
 }
 
 func TestGitHubImporter_ValidateSource(t *testing.T) {
@@ -466,195 +423,239 @@ func TestGitHubImporter_FilterFiles(t *testing.T) {
 	}
 }
 
-func TestGitHubImporter_IsExcluded(t *testing.T) {
+func TestGitHubImporter_FileFiltering(t *testing.T) {
 	importer := NewGitHubImporter()
-
-	tests := []struct {
-		name        string
-		path        string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "excluded .git path",
-			path:        ".git/config",
-			expected:    true,
-			description: "should exclude .git paths",
-		},
-		{
-			name:        "excluded node_modules path",
-			path:        "node_modules/package.json",
-			expected:    true,
-			description: "should exclude node_modules paths",
-		},
-		{
-			name:        "excluded __pycache__ path",
-			path:        "src/__pycache__/module.pyc",
-			expected:    true,
-			description: "should exclude __pycache__ paths",
-		},
-		{
-			name:        "non-excluded path",
-			path:        "src/main.go",
-			expected:    false,
-			description: "should not exclude valid source paths",
-		},
-		{
-			name:        "root file",
-			path:        "README.md",
-			expected:    false,
-			description: "should not exclude root files",
-		},
-		{
-			name:        "excluded .DS_Store",
-			path:        ".DS_Store",
-			expected:    true,
-			description: "should exclude .DS_Store files",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := importer.isExcluded(tt.path)
-			if result != tt.expected {
-				t.Errorf("Expected %v, got %v for test: %s", tt.expected, result, tt.description)
-			}
-		})
-	}
+	
+	t.Run("exclusion rules", func(t *testing.T) {
+		tests := []struct {
+			name        string
+			path        string
+			expected    bool
+			description string
+		}{
+			{
+				name:        "excluded .git path",
+				path:        ".git/config",
+				expected:    true,
+				description: "should exclude .git paths",
+			},
+			{
+				name:        "excluded node_modules path",
+				path:        "node_modules/package.json",
+				expected:    true,
+				description: "should exclude node_modules paths",
+			},
+			{
+				name:        "excluded __pycache__ path",
+				path:        "src/__pycache__/module.pyc",
+				expected:    true,
+				description: "should exclude __pycache__ paths",
+			},
+			{
+				name:        "non-excluded path",
+				path:        "src/main.go",
+				expected:    false,
+				description: "should not exclude valid source paths",
+			},
+			{
+				name:        "root file",
+				path:        "README.md",
+				expected:    false,
+				description: "should not exclude root files",
+			},
+			{
+				name:        "excluded .DS_Store",
+				path:        ".DS_Store",
+				expected:    true,
+				description: "should exclude .DS_Store files",
+			},
+		}
+		
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := importer.isExcluded(tt.path)
+				if result != tt.expected {
+					t.Errorf("Expected %v, got %v for test: %s", tt.expected, result, tt.description)
+				}
+			})
+		}
+	})
+	
+	t.Run("supported file extensions", func(t *testing.T) {
+		tests := []struct {
+			name        string
+			path        string
+			expected    bool
+			description string
+		}{
+			{
+				name:        "supported markdown file",
+				path:        "README.md",
+				expected:    true,
+				description: "should support .md files",
+			},
+			{
+				name:        "supported go file",
+				path:        "main.go",
+				expected:    true,
+				description: "should support .go files",
+			},
+			{
+				name:        "supported python file",
+				path:        "script.py",
+				expected:    true,
+				description: "should support .py files",
+			},
+			{
+				name:        "supported javascript file",
+				path:        "app.js",
+				expected:    true,
+				description: "should support .js files",
+			},
+			{
+				name:        "supported JSON file",
+				path:        "package.json",
+				expected:    true,
+				description: "should support .json files",
+			},
+			{
+				name:        "supported YAML file",
+				path:        "config.yaml",
+				expected:    true,
+				description: "should support .yaml files",
+			},
+			{
+				name:        "supported YML file",
+				path:        "config.yml",
+				expected:    true,
+				description: "should support .yml files",
+			},
+			{
+				name:        "unsupported image file",
+				path:        "image.png",
+				expected:    false,
+				description: "should not support .png files",
+			},
+			{
+				name:        "unsupported binary file",
+				path:        "program.exe",
+				expected:    false,
+				description: "should not support .exe files",
+			},
+			{
+				name:        "file without extension",
+				path:        "Dockerfile",
+				expected:    false,
+				description: "should not support files without extensions",
+			},
+			{
+				name:        "case insensitive extension",
+				path:        "README.MD",
+				expected:    true,
+				description: "should support case insensitive extensions",
+			},
+		}
+		
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := importer.isSupportedFile(tt.path)
+				if result != tt.expected {
+					t.Errorf("Expected %v, got %v for test: %s", tt.expected, result, tt.description)
+				}
+			})
+		}
+	})
 }
 
-func TestGitHubImporter_IsSupportedFile(t *testing.T) {
-	importer := NewGitHubImporter()
-
-	tests := []struct {
-		name        string
-		path        string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "supported markdown file",
-			path:        "README.md",
-			expected:    true,
-			description: "should support .md files",
-		},
-		{
-			name:        "supported go file",
-			path:        "main.go",
-			expected:    true,
-			description: "should support .go files",
-		},
-		{
-			name:        "supported python file",
-			path:        "script.py",
-			expected:    true,
-			description: "should support .py files",
-		},
-		{
-			name:        "supported javascript file",
-			path:        "app.js",
-			expected:    true,
-			description: "should support .js files",
-		},
-		{
-			name:        "supported JSON file",
-			path:        "package.json",
-			expected:    true,
-			description: "should support .json files",
-		},
-		{
-			name:        "supported YAML file",
-			path:        "config.yaml",
-			expected:    true,
-			description: "should support .yaml files",
-		},
-		{
-			name:        "supported YML file",
-			path:        "config.yml",
-			expected:    true,
-			description: "should support .yml files",
-		},
-		{
-			name:        "unsupported image file",
-			path:        "image.png",
-			expected:    false,
-			description: "should not support .png files",
-		},
-		{
-			name:        "unsupported binary file",
-			path:        "program.exe",
-			expected:    false,
-			description: "should not support .exe files",
-		},
-		{
-			name:        "file without extension",
-			path:        "Dockerfile",
-			expected:    false,
-			description: "should not support files without extensions",
-		},
-		{
-			name:        "case insensitive extension",
-			path:        "README.MD",
-			expected:    true,
-			description: "should support case insensitive extensions",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := importer.isSupportedFile(tt.path)
-			if result != tt.expected {
-				t.Errorf("Expected %v, got %v for test: %s", tt.expected, result, tt.description)
+func TestGitHubImporter_Configuration(t *testing.T) {
+	t.Run("default configuration", func(t *testing.T) {
+		importer := NewGitHubImporter()
+		
+		// Check default values
+		if importer.maxFileSize != defaultMaxFileSize {
+			t.Errorf("Expected maxFileSize %d, got %d", defaultMaxFileSize, importer.maxFileSize)
+		}
+		
+		if len(importer.supportedExts) == 0 {
+			t.Error("Expected non-empty supportedExts")
+		}
+		
+		if len(importer.exclusions) == 0 {
+			t.Error("Expected non-empty exclusions")
+		}
+		
+		// Check that some expected extensions are present
+		expectedExts := []string{".md", ".go", ".py", ".js"}
+		for _, ext := range expectedExts {
+			found := false
+			for _, supportedExt := range importer.supportedExts {
+				if supportedExt == ext {
+					found = true
+					break
+				}
 			}
-		})
-	}
-}
-
-func TestGitHubImporter_SettersAndGetters(t *testing.T) {
-	importer := NewGitHubImporter()
-
-	// Test SetExclusions
-	newExclusions := []string{"custom_exclude", "another_exclude"}
-	importer.SetExclusions(newExclusions)
-	if len(importer.exclusions) != len(newExclusions) {
-		t.Errorf("Expected %d exclusions, got %d", len(newExclusions), len(importer.exclusions))
-	}
-	for i, exclusion := range newExclusions {
-		if importer.exclusions[i] != exclusion {
-			t.Errorf("Expected exclusion %s at index %d, got %s", exclusion, i, importer.exclusions[i])
+			if !found {
+				t.Errorf("Expected extension %s to be supported", ext)
+			}
 		}
-	}
-
-	// Test SetSupportedExtensions
-	newExts := []string{".custom", ".another"}
-	importer.SetSupportedExtensions(newExts)
-	if len(importer.supportedExts) != len(newExts) {
-		t.Errorf("Expected %d supported extensions, got %d", len(newExts), len(importer.supportedExts))
-	}
-	for i, ext := range newExts {
-		if importer.supportedExts[i] != ext {
-			t.Errorf("Expected extension %s at index %d, got %s", ext, i, importer.supportedExts[i])
+		
+		// Check that some expected exclusions are present
+		expectedExclusions := []string{".git", "node_modules", "__pycache__"}
+		for _, exclusion := range expectedExclusions {
+			found := false
+			for _, excl := range importer.exclusions {
+				if excl == exclusion {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected exclusion %s to be present", exclusion)
+			}
 		}
-	}
-
-	// Test SetMaxFileSize
-	newMaxSize := int64(2048)
-	importer.SetMaxFileSize(newMaxSize)
-	if importer.maxFileSize != newMaxSize {
-		t.Errorf("Expected max file size %d, got %d", newMaxSize, importer.maxFileSize)
-	}
-
-	// Test SetToken
-	newToken := "test-token-123"
-	importer.SetToken(newToken)
-	if importer.token != newToken {
-		t.Errorf("Expected token %s, got %s", newToken, importer.token)
-	}
-
-	// Test GetSourceType
-	if importer.GetSourceType() != "github" {
-		t.Errorf("Expected source type 'github', got %s", importer.GetSourceType())
-	}
+	})
+	
+	t.Run("setter methods", func(t *testing.T) {
+		importer := NewGitHubImporter()
+		
+		// Test SetExclusions
+		newExclusions := []string{"custom_exclude", "another_exclude"}
+		importer.SetExclusions(newExclusions)
+		if len(importer.exclusions) != len(newExclusions) {
+			t.Errorf("Expected %d exclusions, got %d", len(newExclusions), len(importer.exclusions))
+		}
+		for i, exclusion := range newExclusions {
+			if importer.exclusions[i] != exclusion {
+				t.Errorf("Expected exclusion %s at index %d, got %s", exclusion, i, importer.exclusions[i])
+			}
+		}
+		
+		// Test SetSupportedExtensions
+		newExts := []string{".custom", ".another"}
+		importer.SetSupportedExtensions(newExts)
+		if len(importer.supportedExts) != len(newExts) {
+			t.Errorf("Expected %d supported extensions, got %d", len(newExts), len(importer.supportedExts))
+		}
+		for i, ext := range newExts {
+			if importer.supportedExts[i] != ext {
+				t.Errorf("Expected extension %s at index %d, got %s", ext, i, importer.supportedExts[i])
+			}
+		}
+		
+		// Test SetMaxFileSize
+		newMaxSize := int64(2048)
+		importer.SetMaxFileSize(newMaxSize)
+		if importer.maxFileSize != newMaxSize {
+			t.Errorf("Expected max file size %d, got %d", newMaxSize, importer.maxFileSize)
+		}
+		
+		// Test SetToken
+		newToken := "test-token-123"
+		importer.SetToken(newToken)
+		if importer.token != newToken {
+			t.Errorf("Expected token %s, got %s", newToken, importer.token)
+		}
+	})
 }
 
 func TestGitHubImporter_GitHubTokenEnvironment(t *testing.T) {
@@ -685,27 +686,6 @@ func TestGitHubImporter_GitHubTokenEnvironment(t *testing.T) {
 	}
 }
 
-func TestGitHubImporter_Import_Integration(t *testing.T) {
-	t.Skip("Integration test requires database mocking - skipping for now")
-
-	// This test would verify the complete Import method workflow
-	// but requires proper database mocking which is complex to set up
-	// In a real scenario, we'd use a proper database testing framework
-}
-
-func TestGitHubImporter_GetFileContent(t *testing.T) {
-	t.Skip("API integration test - skipping for now")
-
-	// This test would verify the getFileContent method
-	// but requires actual GitHub API calls or complex mocking
-}
-
-func TestGitHubImporter_ImportFile(t *testing.T) {
-	t.Skip("Integration test requires database mocking - skipping for now")
-
-	// This test would verify the complete importFile method workflow
-	// but requires proper database mocking which is complex to set up
-}
 
 // Benchmark tests
 func BenchmarkGitHubImporter_ValidateSource(b *testing.B) {
