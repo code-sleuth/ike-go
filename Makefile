@@ -110,3 +110,8 @@ lint:
 test:
 	@echo "==> Run tests"
 	@go test -p 1 -coverprofile=coverage.out `go list ./...`
+
+lint-tool:
+	@echo "Installing the Lint tool"
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
+	@echo "🎉 Lint Tool installed 🏁"

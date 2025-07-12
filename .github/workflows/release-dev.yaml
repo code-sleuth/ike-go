@@ -71,8 +71,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-golangci-lint-
 
-      - name: Lint
-        run: make lint
+      - name: Install Lint tool
+        run: make lint-tool
 
       # Cache build artifacts
       - name: Cache Build
