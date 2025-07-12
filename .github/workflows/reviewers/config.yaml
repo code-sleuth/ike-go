@@ -1,0 +1,8 @@
+addReviewers: true
+addAssignees: author
+reviewers:
+  - code-sleuth
+numberOfReviewers: 1
+skipKeywords:
+  - WIP
+  - Ignore
