@@ -67,7 +67,7 @@ The application manages the following entities:
 
 ## Prerequisites
 
-- Go 1.21 or higher
+- Go 1.24 or higher
 - Turso database account and credentials
 - Make (optional, for using Makefile)
 
@@ -199,14 +199,70 @@ export CHUNKER_LOG_LEVEL="error"                # Log level: debug, info, warn, 
 ### GitHub Repositories
 - Supports multiple file types with syntax highlighting
 - Automatic exclusion of common non-content directories
-- Configurable file size limits
+- Configurable file size limits and supported extensions
 - Base64 content decoding
+- Language detection and metadata extraction
 
 ### Supported File Extensions
-- Documentation: `.md`, `.txt`, `.rst`
-- Code: `.py`, `.js`, `.go`, `.java`, `.cpp`, `.c`, `.h`, `.hpp`
-- Web: `.css`, `.html`, `.xml`
-- Data: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`, `.cfg`, `.conf`
+
+The GitHub importer supports the following file types:
+
+#### Documentation Files
+- `.md` - Markdown
+- `.txt` - Plain text
+- `.rst` - reStructuredText
+
+#### Programming Languages
+- `.py` - Python
+- `.js` - JavaScript 
+- `.ts` - TypeScript
+- `.go` - Go
+- `.java` - Java
+- `.cpp`, `.c`, `.h`, `.hpp` - C/C++
+- `.rb` - Ruby
+- `.php` - PHP
+- `.swift` - Swift
+- `.kt` - Kotlin
+- `.scala` - Scala
+- `.rs` - Rust
+- `.dart` - Dart
+- `.lua` - Lua
+- `.pl` - Perl
+- `.r` - R
+
+#### Web Technologies
+- `.css` - Cascading Style Sheets
+- `.html`, `.htm` - HTML
+- `.xml` - XML
+
+#### Data & Configuration
+- `.json` - JSON
+- `.yaml`, `.yml` - YAML
+- `.toml` - TOML
+- `.ini`, `.cfg`, `.conf` - Configuration files
+
+#### Shell Scripts
+- `.sh` - Bash shell scripts
+- `.bash` - Bash scripts
+- `.zsh` - Zsh scripts
+- `.fish` - Fish scripts
+- `.ps1` - PowerShell scripts
+
+#### Database
+- `.sql` - SQL scripts
+
+#### Exclusions
+The following directories and files are automatically excluded:
+- `.git/` - Git version control
+- `node_modules/` - Node.js dependencies
+- `.next/`, `.nuxt/` - Framework build directories
+- `dist/`, `build/` - Build output directories
+- `.vscode/`, `.idea/` - IDE configuration
+- `__pycache__/`, `.pytest_cache/` - Python cache
+- `.coverage` - Coverage reports
+- `.DS_Store` - macOS system files
+
+> **Note**: Both supported file extensions and exclusion patterns are configurable programmatically through the `SetSupportedExtensions()` and `SetExclusions()` methods of the GitHub importer.
 
 ## Chunking Configuration
 
@@ -379,7 +435,7 @@ make test  # Run all tests
 
 ## License
 
-[Add your license information here]
+[MIT](LICENSE)
 
 ## Contributing
 
@@ -408,7 +464,7 @@ make test  # Run all tests
 
 4. **Build Issues**
    - Run `go mod tidy` to ensure dependencies are up to date
-   - Verify Go version 1.21+ is installed
+   - Verify Go version 1.24+ is installed
 
 5. **Test Issues**
    - Embedder tests require API keys: set `OPENAI_API_KEY` and/or `TOGETHER_API_KEY`
