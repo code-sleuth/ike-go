@@ -189,7 +189,7 @@ func (w *WPJSONTransformer) extractDocument(
 		ID:           uuid.New().String(),
 		SourceID:     download.SourceID,
 		DownloadID:   download.ID,
-		Format:       stringPtr("md"),
+		Format:       stringPtr("json"),
 		MinChunkSize: minChunkSize,
 		MaxChunkSize: maxChunkSize,
 	}
@@ -228,10 +228,8 @@ func (w *WPJSONTransformer) extractMetadata(wpData map[string]interface{}, conte
 	if titleObj, exists := wpData["title"]; exists {
 		if titleMap, ok := titleObj.(map[string]interface{}); ok {
 			if rendered, exists := titleMap["rendered"].(string); exists {
-				// Convert HTML to markdown for title
-				if titleMD, err := w.markdownConverter.ConvertString(rendered); err == nil {
-					metadata["document_title"] = strings.TrimSpace(titleMD)
-				}
+				// Store title as plain text (no need to convert HTML for simple titles)
+				metadata["document_title"] = strings.TrimSpace(rendered)
 			}
 		}
 	}
@@ -367,10 +365,19 @@ func (w *WPJSONTransformer) saveMetadata(
 	db *sql.DB,
 ) error {
 	for key, value := range metadata {
-		metaJSON, err := json.Marshal(value)
-		if err != nil {
-			w.logger.Error().Err(err).Msgf("failed to marshal metadata for key %s: %v", key, value)
-			continue
+		var metaValue string
+		
+		// Handle strings without JSON marshaling to avoid extra quotes
+		if str, ok := value.(string); ok {
+			metaValue = str
+		} else {
+			// For non-string values, use JSON marshaling
+			metaJSON, err := json.Marshal(value)
+			if err != nil {
+				w.logger.Error().Err(err).Msgf("failed to marshal metadata for key %s: %v", key, value)
+				continue
+			}
+			metaValue = string(metaJSON)
 		}
 
 		query := `INSERT INTO document_meta (id, document_id, key, meta, created_at)
@@ -379,8 +386,8 @@ func (w *WPJSONTransformer) saveMetadata(
 				  	meta = excluded.meta,
 				  	created_at = excluded.created_at`
 
-		_, err = db.ExecContext(ctx, query, uuid.New().String(), documentID, key,
-			string(metaJSON), time.Now().Format(time.RFC3339))
+		_, err := db.ExecContext(ctx, query, uuid.New().String(), documentID, key,
+			metaValue, time.Now().Format(time.RFC3339))
 		if err != nil {
 			w.logger.Error().Err(err).Msgf("failed to save metadata for key %s: %v", key, value)
 			return err
