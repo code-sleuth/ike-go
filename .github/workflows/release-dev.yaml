@@ -1,0 +1,97 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: true
+        default: "warning"
+      release-ver:
+        description: "Release Version"
+        required: false
+        default: "v"
+  push:
+    branches:
+      - master
+      - deploy
+
+jobs:
+  build:
+    name: Dev
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["go"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Go Version
+        run: go version
+
+      # Cache Go module dependencies
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Go imports
+        run: go install golang.org/x/tools/cmd/goimports@latest
+
+      - name: Go lines
+        run: go install github.com/segmentio/golines@latest
+
+      # Cache golangci-lint installation
+      - name: Cache golangci-lint
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-lint-${{ hashFiles('**/.golangci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-golangci-lint-
+
+      - name: Lint
+        run: make lint
+
+      # Cache build artifacts
+      - name: Cache Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./bin
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Build
+        run: |
+          make build-linux
+
+      # Upload build artifacts as workflow artifacts
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binary
+          path: ./bin
+          retention-days: 5
