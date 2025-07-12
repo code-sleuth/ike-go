@@ -1,4 +1,4 @@
-name: Release
+name: Build
 on:
   workflow_dispatch:
     inputs:
@@ -10,14 +10,11 @@ on:
         description: "Release Version"
         required: false
         default: "v"
-  push:
-    branches:
-      - main
-      - deploy
+  pull_request:
 
 jobs:
   build:
-    name: Dev
+    name: Build
     runs-on: ubuntu-latest
     environment: dev
     permissions:
@@ -71,7 +68,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-golangci-lint-
 
-      - name: Lint
+      - name: Run Linter
         run: make lint
 
       # Cache build artifacts
@@ -87,11 +84,3 @@ jobs:
       - name: Build
         run: |
           make build-linux
-
-      # Upload build artifacts as workflow artifacts
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-binary
-          path: ./bin
-          retention-days: 5
