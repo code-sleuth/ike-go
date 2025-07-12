@@ -94,9 +94,9 @@ CREATE TABLE IF NOT EXISTS document_meta (
 -- embeddings table
 CREATE TABLE IF NOT EXISTS embeddings (
     id TEXT NOT NULL PRIMARY KEY,
-    embedding_1536 VECTOR(1536),
-    embedding_3072 VECTOR(3072),
-    embedding_768 VECTOR(768),
+    embedding_1536 TEXT,
+    embedding_3072 TEXT,
+    embedding_768 TEXT,
     model TEXT,
     embedded_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     object_id TEXT NOT NULL,
