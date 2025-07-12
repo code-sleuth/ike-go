@@ -20,6 +20,11 @@ var (
 	ErrInvalidOverlap   = errors.New("overlapTokens must be between 0 and maxTokens")
 )
 
+const (
+	maxTokensDefault     = 100
+	overlapTokensDefault = 20
+)
+
 // TokenChunker implements token-based chunking using tiktoken.
 type TokenChunker struct {
 	encoding tokenizer.Codec
@@ -31,7 +36,7 @@ func NewTokenChunker() (*TokenChunker, error) {
 	// Get log level from environment or default to error
 	logLevel := getLogLevelFromEnv()
 	logger := util.NewLogger(logLevel)
-	
+
 	// Get tokenizer from environment or default to cl100k_base
 	tokenizerName := getTokenizerFromEnv()
 	encoding, err := getTokenizerEncoding(tokenizerName)
@@ -237,7 +242,7 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-// getTokenizerFromEnv returns the tokenizer name from environment or default
+// getTokenizerFromEnv returns the tokenizer name from environment or default.
 func getTokenizerFromEnv() string {
 	tokenizerName := os.Getenv("CHUNKER_TOKENIZER")
 	if tokenizerName == "" {
@@ -246,7 +251,7 @@ func getTokenizerFromEnv() string {
 	return tokenizerName
 }
 
-// getTokenizerEncoding returns the tokenizer encoding for the given name
+// getTokenizerEncoding returns the tokenizer encoding for the given name.
 func getTokenizerEncoding(name string) (tokenizer.Codec, error) {
 	switch strings.ToLower(name) {
 	case "cl100k_base":
@@ -261,7 +266,7 @@ func getTokenizerEncoding(name string) (tokenizer.Codec, error) {
 	}
 }
 
-// getLogLevelFromEnv returns the log level from environment or default
+// getLogLevelFromEnv returns the log level from environment or default.
 func getLogLevelFromEnv() zerolog.Level {
 	logLevel := os.Getenv("CHUNKER_LOG_LEVEL")
 	switch strings.ToLower(logLevel) {
@@ -278,7 +283,7 @@ func getLogLevelFromEnv() zerolog.Level {
 	}
 }
 
-// getIntFromEnv returns an integer from environment variable or default value
+// getIntFromEnv returns an integer from environment variable or default value.
 func getIntFromEnv(key string, defaultValue int) int {
 	value := os.Getenv(key)
 	if value == "" {
@@ -290,12 +295,12 @@ func getIntFromEnv(key string, defaultValue int) int {
 	return defaultValue
 }
 
-// GetDefaultMaxTokens returns the default max tokens from environment or default
+// GetDefaultMaxTokens returns the default max tokens from environment or default.
 func GetDefaultMaxTokens() int {
-	return getIntFromEnv("CHUNKER_DEFAULT_MAX_TOKENS", 100)
+	return getIntFromEnv("CHUNKER_DEFAULT_MAX_TOKENS", maxTokensDefault)
 }
 
-// GetDefaultOverlapTokens returns the default overlap tokens from environment or default
+// GetDefaultOverlapTokens returns the default overlap tokens from environment or default.
 func GetDefaultOverlapTokens() int {
-	return getIntFromEnv("CHUNKER_DEFAULT_OVERLAP_TOKENS", 20)
+	return getIntFromEnv("CHUNKER_DEFAULT_OVERLAP_TOKENS", overlapTokensDefault)
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/code-sleuth/ike-go/internal/manager/models"
@@ -12,7 +13,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var errSourceNotFound = errors.New("source not found")
+var (
+	errSourceNotFound             = errors.New("source not found")
+	errUnsupportedTimestampFormat = errors.New("unsupported timestamp format")
+)
 
 type SourceRepository struct {
 	db     *db.DB
@@ -151,18 +155,18 @@ func (r *SourceRepository) Delete(id string) error {
 	return err
 }
 
-// parseTimestamp handles multiple timestamp formats used by SQLite
+// parseTimestamp handles multiple timestamp formats used by SQLite.
 func parseTimestamp(timestampStr string) (time.Time, error) {
 	// Try ISO 8601 format first (default creation format)
 	if t, err := time.Parse("2006-01-02T15:04:05Z", timestampStr); err == nil {
 		return t, nil
 	}
-	
+
 	// Try SQLite datetime() format (used by updates)
 	if t, err := time.Parse("2006-01-02 15:04:05", timestampStr); err == nil {
 		return t, nil
 	}
-	
+
 	// If both fail, return error
-	return time.Time{}, errors.New("unsupported timestamp format: " + timestampStr)
+	return time.Time{}, fmt.Errorf("%w: %s", errUnsupportedTimestampFormat, timestampStr)
 }

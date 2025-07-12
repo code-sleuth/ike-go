@@ -366,7 +366,7 @@ func (w *WPJSONTransformer) saveMetadata(
 ) error {
 	for key, value := range metadata {
 		var metaValue string
-		
+
 		// Handle strings without JSON marshaling to avoid extra quotes
 		if str, ok := value.(string); ok {
 			metaValue = str

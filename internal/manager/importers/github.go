@@ -31,7 +31,7 @@ const (
 	httpOKStatus = 200
 	// Default file format for sources.
 	formatJSON = "json"
-	// Default source type
+	// Default source type.
 	sourceTypeGitHub = "github"
 )
 
